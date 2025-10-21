@@ -1,0 +1,196 @@
+:root {
+    --bg: #0a0a0a;
+    --bg2: #0f0f10;
+    --surface: #111214;
+    --surface-2: #17181b;
+    --text: #e5e7eb;
+    --muted: #a1a1aa;
+    --border: #1f1f22;
+    --primary: #e50914; /* BioForge red */
+    --primary-600: #b20710;
+    --accent: #ff4d5d;
+    --ok: #16a34a;
+    --warn: #f59e0b;
+    --err: #ef4444;
+    --radius: 12px;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    --glow: 0 0 18px rgba(229, 9, 20, 0.35);
+}
+
+* {
+    box-sizing: border-box;
+}
+html,
+body,
+#root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Arial,
+        sans-serif;
+    background:
+        radial-gradient(
+            1200px 800px at 120% -20%,
+            rgba(229, 9, 20, 0.08),
+            transparent 60%
+        ),
+        radial-gradient(
+            800px 500px at -20% 120%,
+            rgba(229, 9, 20, 0.06),
+            transparent 60%
+        ),
+        linear-gradient(180deg, var(--bg) 0%, #0b0b0c 100%);
+    color: var(--text);
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.container {
+    width: min(1120px, 92%);
+    margin: 0 auto;
+}
+
+.card {
+    background: linear-gradient(180deg, var(--surface), var(--surface-2));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px;
+}
+
+.nav {
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(6px);
+    background: linear-gradient(
+        180deg,
+        rgba(15, 15, 16, 0.75),
+        rgba(10, 10, 10, 0.45)
+    );
+}
+
+.brand {
+    font-family: Orbitron, Inter, sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    border-color: #24252a;
+}
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(180deg, var(--primary), var(--primary-600));
+    border: 1px solid var(--primary-600);
+    color: white;
+    box-shadow: var(--glow);
+}
+.btn-primary:hover {
+    filter: brightness(1.05);
+}
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+.textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: #0c0c0e;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+    transition:
+        border 0.15s ease,
+        box-shadow 0.15s ease;
+    font-family: monospace;
+}
+.textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+}
+
+.video-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.grid {
+    display: grid;
+    gap: 16px;
+}
+.grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+}
+.badge.err {
+    color: #fecaca;
+    border-color: #7f1d1d;
+    background: rgba(239, 68, 68, 0.08);
+    display: flex;
+    align-items: center;
+}
+
+.section-title {
+    font-weight: 700;
+    font-size: 20px;
+    margin: 0 0 10px;
+}
+.helper {
+    color: var(--muted);
+    font-size: 13px;
+}
+.buttons-title {
+    display: flex;
+    gap: 20px;
+}
+
+footer {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 40px;
+    text-align: center;
+}

@@ -1,0 +1,138 @@
+---
+- name: Deploy BioForge CTF Service
+  hosts: team_servers
+  gather_facts: yes
+
+  vars:
+    target_directory: /home/uctf/services
+    project_name: "{{ git_repo_url | basename | regex_replace('\\.git$', '') }}"
+    service_name: "{{ ansible_hostname | regex_replace('^team-', '') }}-{{ project_name | lower }}"
+
+  tasks:
+    - name: Display deployment configuration
+      debug:
+        msg:
+          - "Directory: {{ target_directory }}"
+          - "Service name: {{ service_name }}"
+          - "Repo: {{ git_repo_url }}"
+          - "Commit: {{ git_commit_sha }}"
+
+    - name: Ensure Docker service is running
+      become: yes
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Prepare target dir
+      file:
+        path: "{{ target_directory }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: "0755"
+      become: yes
+
+    - name: Clean previous repo
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        state: absent
+      become: yes
+
+    - name: Clone repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ target_directory }}/{{ service_name }}"
+        version: "{{ git_commit_sha }}"
+        force: yes
+      become_user: uctf
+      environment:
+        GIT_SSL_NO_VERIFY: "1"
+        GIT_USERNAME: "gitlab-ci-token"
+        GIT_PASSWORD: "{{ gitlab_token }}"
+
+    - name: Remove .git directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/.git"
+        state: absent
+
+    - name: Ensure bioforge-net network exists
+      become: yes
+      docker_network:
+        name: bioforge-net
+        state: present
+
+    - name: Stop old containers if any
+      become: yes
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - bioforge
+        - qdrant
+        - init-qdrant
+      ignore_errors: yes
+
+    - name: Run Qdrant container
+      become: yes
+      docker_container:
+        name: qdrant
+        image: qdrant/qdrant:latest
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "6334:6334"
+          - "6333:6333"
+        volumes:
+          - "{{ target_directory }}/{{ service_name }}/qdrant_data:/qdrant/storage"
+        networks:
+          - name: bioforge-net
+
+    - name: Build BioForge image
+      become: yes
+      docker_image:
+        name: bioforge
+        source: build
+        force_source: yes
+        build:
+          path: "{{ target_directory }}/{{ service_name }}"
+          dockerfile: Dockerfile
+        state: present
+
+    - name: Run BioForge backend
+      become: yes
+      docker_container:
+        name: bioforge
+        image: bioforge
+        state: started
+        restart_policy: unless-stopped
+        ports:
+          - "8443:8080"
+        env:
+          GIN_MODE: release
+          QDRANT_HOST: qdrant
+        networks:
+          - name: bioforge-net
+
+    - name: Initialize Qdrant collection
+      become: yes
+      docker_container:
+        name: init-qdrant
+        image: curlimages/curl:8.7.1
+        state: started
+        restart_policy: "no"
+        command: >
+          sh -c "sleep 5;
+          echo 'Creating collection bioforge-kb...';
+          curl -sf -X PUT http://qdrant:6333/collections/bioforge-kb
+          -H 'Content-Type: application/json'
+          -d '{\"vectors\": {\"size\": 1024, \"distance\": \"Cosine\"}}'"
+        networks:
+          - name: bioforge-net
+
+    - name: Show deployment info
+      debug:
+        msg:
+          - "BioForge deployed with Qdrant"
+          - "Network: bioforge-net"
+          - "Backend URL: http://{{ ansible_hostname }}.ctflab.local:8443"

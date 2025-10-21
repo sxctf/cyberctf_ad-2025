@@ -1,0 +1,171 @@
+---
+- name: Deploy CTF Service
+  hosts: team_servers
+  become: yes
+  become_user: uctf
+  gather_facts: yes
+  
+  vars:
+    # Default values - can be overridden by extra-vars from GitLab CI
+    target_directory: /home/uctf/services
+    # Extract project name from repository URL
+    project_name: "{{ git_repo_url | basename | regex_replace('\\.git$', '') }}"
+    service_name: "{{ ansible_hostname | regex_replace('^team-', '') }}-{{ project_name | lower }}"
+
+  tasks:
+    - name: Display deployment configuration
+      debug:
+        msg:
+          - "Target directory: {{ target_directory }}"
+          - "Project name: {{ project_name }}"
+          - "Service name: {{ service_name }}"
+          - "Repository: {{ git_repo_url }}"
+          - "Commit SHA: {{ git_commit_sha }}"
+          - "Target host: {{ ansible_hostname }}"
+
+    - name: Create services directory if it doesn't exist
+      file:
+        path: "{{ target_directory }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: '0755'
+      become_user: uctf
+
+    - name: Check if repository directory exists
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}"
+      register: repo_dir_stat
+
+    - name: Remove existing repository directory if it exists
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        state: absent
+      when: repo_dir_stat.stat.exists
+
+    - name: Clone repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ target_directory }}/{{ service_name }}"
+        version: "{{ git_commit_sha }}"
+        clone: yes
+        update: no
+        force: yes
+      become_user: uctf
+      environment:
+        GIT_SSL_NO_VERIFY: "1"
+        GIT_USERNAME: "gitlab-ci-token"
+        GIT_PASSWORD: "{{ gitlab_token }}"
+      retries: 3
+      delay: 5
+      register: clone_result
+      until: clone_result is succeeded
+
+    - name: Remove .git directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/.git"
+        state: absent
+      become_user: uctf
+
+    - name: Remove checker directory if exists
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/checker"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+
+    - name: Remove README.md file if exists
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/README.md"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+
+    - name: Set proper ownership for service directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        owner: uctf
+        group: uctf
+        recurse: yes
+      become: yes
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+
+    - name: Stop existing container if running
+      docker_container:
+        name: "{{ service_name }}"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+      retries: 2
+      delay: 3
+
+    - name: Remove existing image if exists
+      docker_image:
+        name: "{{ service_name }}"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+      retries: 2
+      delay: 3
+
+    - name: Check if docker-compose.yml exists
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}/sleep-capsule/docker-compose.yml"
+      register: docker_compose_exists
+
+    - name: Extract volume directories from docker-compose.yml
+      shell: |
+        if [ -f "{{ target_directory }}/{{ service_name }}/sleep-capsule/docker-compose.yml" ]; then
+          grep -E "^\s*-\s*\\./" "{{ target_directory }}/{{ service_name }}/sleep-capsule/docker-compose.yml" | \
+          sed 's/.*\.\/\([^:]*\):.*/\1/' | \
+          while read dir; do
+            if [ -d "{{ target_directory }}/{{ service_name }}/sleep-capsule/$dir" ]; then
+              echo "$dir"
+            fi
+          done | sort -u
+        fi
+      register: volume_dirs_result
+      become_user: uctf
+      when: docker_compose_exists.stat.exists
+
+    - name: Create volume directories from docker-compose.yml
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/sleep-capsule/{{ item }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: '0755'
+      become_user: uctf
+      loop: "{{ volume_dirs_result.stdout_lines | default([]) }}"
+      when: docker_compose_exists.stat.exists and volume_dirs_result.stdout_lines | length > 0
+
+    - name: Stop existing docker-compose services if running
+      shell: |
+        cd "{{ target_directory }}/{{ service_name }}/sleep-capsule"
+        docker compose down --remove-orphans || docker-compose down --remove-orphans || true
+      become_user: uctf
+      ignore_errors: yes
+
+    - name: Build and start services with docker-compose
+      shell: |
+        cd "{{ target_directory }}/{{ service_name }}/sleep-capsule"
+        docker compose up -d --build || docker-compose up -d --build
+      become_user: uctf
+
+    - name: Display deployment information
+      debug:
+        msg: 
+          - "Service deployed to: {{ target_directory }}/{{ service_name }}"
+          - "Repository: {{ git_repo_url }}"
+          - "Commit SHA: {{ git_commit_sha }}"
+          - "Target host: {{ ansible_hostname }}"
+          - "Project name: {{ service_name }}"
+          - "Frontend URL: http://{{ ansible_hostname }}.ctflab.local:80"
+          - "Backend API URL: http://{{ ansible_hostname }}.ctflab.local:8000"
+          - "Database: PostgreSQL on internal network"

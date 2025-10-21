@@ -1,0 +1,9 @@
+.gitattributes
+*.db
+/env
+.DS_Store
+/venv
+/user_logger.py
+/logs/*
+/db/*
+

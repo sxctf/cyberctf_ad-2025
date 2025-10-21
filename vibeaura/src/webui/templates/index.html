@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VibeAura</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --panel: #0f131a;
+      --panel-2: #121723;
+      --text: #e8ecf1;
+      --accent: #6ee7ff;
+      --border: #202636;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .chat {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: 800px;
+      height: 650px;
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .msg {
+      max-width: 70%;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      background: var(--panel-2);
+      color: var(--text);
+      box-sizing: border-box;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeIn 0.3s ease forwards;
+      user-select: text;
+    }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+    .msg.user { margin-left: auto; border-bottom-right-radius: 2px; }
+    .msg.assistant { margin-right: auto; border-bottom-left-radius: 2px; }
+    .msg.loading {
+      background: linear-gradient(90deg, var(--panel-2), var(--panel), var(--panel-2));
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      color: transparent;
+      height: 20px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .code-block {
+      background: #1e1e2f;
+      color: #e3e3e3;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      margin-top: 8px;
+      user-select: text;
+    }
+    .task-card {
+      background: #1e1e2f;
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .task-card .title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: var(--accent);
+    }
+    .btn-logout, .btn-check {
+      position: fixed;
+      top: 16px;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      color: white;
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+    }
+    .btn-logout { 
+      right: 16px;
+      background: #ef4444;
+    }
+    .btn-logout:hover { background: #dc2626; }
+    .btn-check { 
+      right: 120px;
+      background: #22c55e;
+    }
+    .btn-check:hover { background: #16a34a; }
+    .task-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .task-form input, .task-form textarea {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      font: 14px var(--sans);
+      outline: none;
+      resize: none;
+    }
+    .task-form button {
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px;
+      background: var(--accent);
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .response-section {
+      margin-bottom: 16px;
+    }
+    .response-section .title {
+      font-weight: bold;
+      margin-bottom: 6px;
+      color: var(--accent);
+    }
+
+    .side-text {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%) rotate(-90deg); /* один transform на всех */
+      transform-origin: center;
+      font-size: 96px;
+      font-weight: bold;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #6ee7ff, #8b5cf6, #22c55e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      white-space: nowrap;
+      letter-spacing: 4px;
+      z-index: 9999;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .left-vibe {
+      left: 60px;
+    }
+
+    .right-aura {
+      right: 60px;
+    }
+
+
+</style>
+</head>
+<body>
+  <button class="btn-logout" id="logoutBtn">Logout</button>
+  <button class="btn-check" id="checkBtn">Check</button>
+
+  <div class="chat">
+    <div class="messages" id="messages">
+      <div class="msg assistant">👋 Hi, this is VibeAura. I will help you write your own application and run it. Let's start!</div>
+    </div>
+  </div>
+
+    
+  <div class="side-text left-vibe">VIBE</div>
+  <div class="side-text right-aura">AURA</div>
+
+  <script>
+    const messages = document.getElementById('messages');
+    let currentTaskForm = null;
+
+    function addMessage(text, type) {
+      const msg = document.createElement('div');
+      msg.className = 'msg ' + type;
+      msg.textContent = text;
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addLoadingMessage() {
+      const msg = document.createElement('div');
+      msg.className = 'msg assistant loading';
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+      return msg;
+    }
+
+    function addResponseSection(title, content) {
+      const section = document.createElement('div');
+      section.className = 'response-section';
+      
+      const titleEl = document.createElement('div');
+      titleEl.className = 'title';
+      titleEl.textContent = title;
+      section.appendChild(titleEl);
+      
+      const contentEl = document.createElement('div');
+      contentEl.className = 'code-block';
+      contentEl.textContent = content;
+      section.appendChild(contentEl);
+      
+      return section;
+    }
+
+    function showResponse(data) {
+      const msg = document.createElement('div');
+      msg.className = 'msg assistant';
+      
+      let hasContent = false;
+      
+      // Content
+      if (data.content && data.content.trim()) {
+        msg.appendChild(addResponseSection('Assistant response', data.content));
+        hasContent = true;
+      }
+      
+      // Python code
+      if (data.python_code && data.python_code.trim()) {
+        msg.appendChild(addResponseSection('Generated Code', data.python_code));
+        hasContent = true;
+      }
+      
+      // Dockerfile code
+      if (data.dockerfile_code && data.dockerfile_code.trim()) {
+        msg.appendChild(addResponseSection('Dockerfile', data.dockerfile_code));
+        hasContent = true;
+      }
+      
+      // No content message
+      if (!hasContent && data.message) {
+        msg.appendChild(addResponseSection('Response', data.message));
+      } else if (!hasContent) {
+        msg.appendChild(addResponseSection('Response', 'No content received'));
+      }
+      
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addTaskMessage({ taskName, taskDescription }) {
+      const msg = document.createElement('div');
+      msg.className = 'msg user';
+
+      const card = document.createElement('div');
+      card.className = 'task-card';
+
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = '📌 Task';
+      card.appendChild(title);
+
+      const nameEl = document.createElement('div');
+      nameEl.textContent = `Name: ${taskName}`;
+      card.appendChild(nameEl);
+
+      const descEl = document.createElement('div');
+      descEl.textContent = `Description: ${taskDescription}`;
+      card.appendChild(descEl);
+
+      msg.appendChild(card);
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function addTaskForm() {
+      if (currentTaskForm) {
+        currentTaskForm.remove();
+      }
+
+      const msg = document.createElement('div');
+      msg.className = 'msg user';
+      currentTaskForm = msg;
+
+      const form = document.createElement('form');
+      form.className = 'task-form';
+
+      const nameInput = document.createElement('input');
+      nameInput.placeholder = 'Task Name (required)';
+      nameInput.name = 'taskName';
+      nameInput.required = true;
+
+      const descInput = document.createElement('textarea');
+      descInput.placeholder = 'Task Description (required)';
+      descInput.name = 'taskDescription';
+      descInput.required = true;
+
+      const btn = document.createElement('button');
+      btn.type = 'submit';
+      btn.textContent = 'Send Task';
+
+      form.appendChild(nameInput);
+      form.appendChild(descInput);
+      form.appendChild(btn);
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const taskName = nameInput.value.trim();
+        const taskDescription = descInput.value.trim();
+        if (!taskName || !taskDescription) return;
+
+        msg.remove();
+        currentTaskForm = null;
+        addTaskMessage({ taskName, taskDescription });
+
+        const shimmer = addLoadingMessage();
+
+        try {
+          const response = await fetch('/webui/v1/vibeaura', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              taskName, 
+              taskDescription
+            }),
+          });
+
+          if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+          
+          const data = await response.json();
+          shimmer.remove();
+          showResponse(data);
+          addTaskForm();
+
+        } catch (err) {
+          shimmer.remove();
+          addMessage('❌ Error while sending request', 'assistant');
+          console.error(err);
+          addTaskForm();
+        }
+      });
+
+      msg.appendChild(form);
+      messages.appendChild(msg);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      deleteCookie("auth_token");
+      window.location.href = "/";
+    });
+
+    document.getElementById("checkBtn").addEventListener("click", () => {
+      window.location.href = "/check"
+    });
+
+    // Initialize the form
+    addTaskForm();
+  </script>
+</body>
+</html>

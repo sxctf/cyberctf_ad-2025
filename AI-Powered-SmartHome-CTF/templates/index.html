@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard">
+    <h2>System status</h2>
+    
+    <div class="sensors">
+        <div class="sensor-chart">
+            <canvas id="tempChart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="lightChart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="co2Chart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="humidityChart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="DOChart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="ECChart"></canvas>
+        </div>
+        <div class="sensor-chart">
+            <canvas id="pHChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="residents-status">
+        <h3>Residents' condition</h3>
+        <div class="avatars">
+            {% for resident in residents_status %}
+            <div class="avatar">
+                <div class="emoji">{{ resident.emoji }}</div>
+                <p>{{ resident.name }}</p>
+                <p class="resident-type">{{ resident.type|title }}</p>
+                <span class="status {{ resident.status_class }}">{{ resident.status|title }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="agents-status">
+        <h3>AI-Agents status</h3>
+        <div class="agents">
+            {% for agent, status in statuses.items() %}
+            <div class="agent">
+                {{ agent }} <span class="icon {{ status }}">●</span>
+            </div>
+            {% endfor %}    
+        </div>
+    </div>
+</div>
+
+<script>
+    const chartsConfig = [
+        {id: 'tempChart', label: 'Temperature °C', data: {{tempData}}, threshold: 40.0},
+        {id: 'lightChart', label: 'Illumination lx', data: {{lightData}}, threshold: 10000.0},
+        {id: 'co2Chart', label: 'CO₂ ppm', data: {{coData}}, threshold: 500.0},
+        {id: 'humidityChart', label: 'Humidity %', data: {{humidityData}}, threshold: 70.0},
+        {id: 'DOChart', label: 'Solubility oxygen in the ground mg/l', data: {{doData}}, threshold: 10.0},
+        {id: 'ECChart', label: 'Electrical conductivity mSm/Cm', data: {{ecData}}, threshold: 3.0},
+        {id: 'pHChart', label: 'Acidity pH', data: {{phData}}, threshold: 8.0}
+    ];
+
+    chartsConfig.forEach(config => {
+        const ctx = document.getElementById(config.id).getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['-4t', '-3t', '-2t', '-1t', 'Сейчас'],
+                datasets: [{
+                    label: config.label,
+                    data: config.data,
+                    borderColor: config.data.slice(-1)[0] > config.threshold ? 'rgb(255, 99, 132)' : 'rgb(75, 192, 192)',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    y: {beginAtZero: false}
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock %}

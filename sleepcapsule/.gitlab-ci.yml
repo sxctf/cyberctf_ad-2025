@@ -1,0 +1,70 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+  ANSIBLE_SSH_PIPELINING: "True"
+  ANSIBLE_GATHERING: "smart"
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_DRIVER: overlay2
+
+# Build Docker images stage
+build_backend:
+  stage: build
+  image: docker:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  before_script:
+    - cd sleep-capsule/backend
+  script:
+    - echo "Building backend Docker image..."
+    - docker build -t sleep-capsule-backend:$CI_COMMIT_SHA .
+    - docker tag sleep-capsule-backend:$CI_COMMIT_SHA sleep-capsule-backend:latest
+    - echo "Backend image built successfully"
+  only:
+    - main
+    - develop
+
+build_frontend:
+  stage: build
+  image: docker:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  before_script:
+    - cd sleep-capsule/frontend
+  script:
+    - echo "Building frontend Docker image..."
+    - docker build -t sleep-capsule-frontend:$CI_COMMIT_SHA .
+    - docker tag sleep-capsule-frontend:$CI_COMMIT_SHA sleep-capsule-frontend:latest
+    - echo "Frontend image built successfully"
+  only:
+    - main
+    - develop
+
+# Deploy to servers using Ansible
+deploy_to_servers:
+  stage: deploy
+  image: gitlab.ctflab.local:5035/sab/ansible-image:latest
+  tags:
+    - ansible
+  variables:
+    ANSIBLE_INVENTORY: "ansible_inventory"
+  before_script:
+    - ansible --version
+    - echo "Starting deployment to servers..."
+  script:
+    - |
+      ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml \
+        --extra-vars "uctf_password=$UCTF_PASSWORD" \
+        --extra-vars "git_repo_url=$CI_REPOSITORY_URL" \
+        --extra-vars "git_commit_sha=$CI_COMMIT_SHA" \
+        --extra-vars "gitlab_token=$GITLAB_TOKEN"
+  only:
+    - main
+    - develop
+  when: manual

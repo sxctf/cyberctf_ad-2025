@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="resident-details-page">
+    <h2>Resident Details</h2>
+    
+    <!-- УЯЗВИМОСТЬ: полное отключение безопасности -->
+    {% set raw_name = resident.name %}
+    {% set raw_voucher = resident.voucher %}
+    
+    <div class="resident-info">
+        <div class="info-row">
+            <strong>Name:</strong> {{ resident_name }}
+        </div>
+        <div class="info-row">
+            <strong>Type:</strong> {{ resident.type }}
+        </div>
+        <div class="info-row">
+            <strong>Room:</strong> {{ resident.room }}
+        </div>
+            {{ resident.voucher }}
+
+            {{ resident.voucher | safe }}
+
+            {{ resident.voucher | e }}
+
+            {% raw %}
+            {{ resident.voucher }}
+            {% endraw %}
+
+        {% if current_user.is_authenticated and current_user.role == 'admin' %}
+        <div class="info-row admin-info">
+            <strong>Voucher:</strong> {{ raw_voucher }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- УЯЗВИМОСТЬ: выполнение через eval-подобную логику -->
+    <div class="ssti-test">
+        <h3>SSTI Test Area:</h3>
+        <div id="ssti-output">
+            {{ raw_name }}  <!-- Должно выполниться как код -->
+        </div>
+    </div>
+</div>
+
+<script>
+// УЯЗВИМОСТЬ XSS: данные в JavaScript
+var residentData = {
+    name: "{{ resident.name | safe }}",
+    voucher: "{{ resident.voucher | safe }}"
+};
+</script>
+
+<a href="{{ url_for('residents') }}" class="back-link">← Back to residents</a>
+{% endblock %}

@@ -1,0 +1,198 @@
+---
+- name: Deploy CTF Service
+  hosts: team_servers
+  become: yes
+  become_user: uctf
+  gather_facts: yes
+  
+  vars:
+    # Default values - can be overridden by extra-vars from GitLab CI
+    target_directory: /home/uctf/services
+    # Extract project name from repository URL
+    project_name: "{{ git_repo_url | basename | regex_replace('\\.git$', '') }}"
+    service_name: "{{ ansible_hostname | regex_replace('^team-', '') }}-{{ project_name | lower }}"
+
+  tasks:
+    - name: Display deployment configuration
+      debug:
+        msg:
+          - "Target directory: {{ target_directory }}"
+          - "Project name: {{ project_name }}"
+          - "Service name: {{ service_name }}"
+          - "Repository: {{ git_repo_url }}"
+          - "Commit SHA: {{ git_commit_sha }}"
+          - "Target host: {{ ansible_hostname }}"
+
+    - name: Create services directory if it doesn't exist
+      file:
+        path: "{{ target_directory }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: '0755'
+      become_user: uctf
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+
+    - name: Clean up Docker resources to free disk space
+      command: docker system prune -f
+      become_user: uctf
+      ignore_errors: yes
+
+    - name: Stop existing containers if running
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+      loop:
+        - "{{ service_name }}"
+        - "{{ service_name }}-postgres"
+      retries: 2
+      delay: 3
+
+    - name: Remove existing image if exists
+      docker_image:
+        name: "{{ service_name }}"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+      retries: 2
+      delay: 3
+    
+    - name: Stop any container using port 5433
+      shell: |
+        docker ps -q --filter "publish=5433" | xargs -r docker stop
+        docker ps -aq --filter "publish=5433" | xargs -r docker rm
+      become_user: uctf
+      ignore_errors: yes
+
+    - name: Wait for containers to fully stop
+      wait_for:
+        timeout: 10
+      when: true
+
+    - name: Check if repository directory exists
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}"
+      register: repo_dir_stat
+
+    - name: Force remove existing repository directory if it exists
+      shell: |
+        if [ -d "{{ target_directory }}/{{ service_name }}" ]; then
+          # Try to remove as uctf user first
+          rm -rf "{{ target_directory }}/{{ service_name }}" || {
+            # If that fails, try with sudo
+            sudo rm -rf "{{ target_directory }}/{{ service_name }}"
+          }
+        fi
+      become_user: uctf
+      ignore_errors: yes
+      retries: 3
+      delay: 5
+
+    - name: Clone repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ target_directory }}/{{ service_name }}"
+        version: "{{ git_commit_sha }}"
+        clone: yes
+        update: no
+        force: yes
+      become_user: uctf
+      environment:
+        GIT_SSL_NO_VERIFY: "1"
+        GIT_USERNAME: "gitlab-ci-token"
+        GIT_PASSWORD: "{{ gitlab_token }}"
+      retries: 3
+      delay: 5
+      register: clone_result
+      until: clone_result is succeeded
+
+    - name: Remove .git directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/.git"
+        state: absent
+      become_user: uctf
+
+    - name: Set proper ownership for service directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        owner: uctf
+        group: uctf
+        recurse: yes
+      become: yes
+
+    - name: Check if docker-compose.yml exists
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}/docker-compose.yml"
+      register: docker_compose_exists
+
+    - name: Extract volume directories from docker-compose.yml
+      shell: |
+        if [ -f "{{ target_directory }}/{{ service_name }}/docker-compose.yml" ]; then
+          grep -E "^\s*-\s*\\./" "{{ target_directory }}/{{ service_name }}/docker-compose.yml" | \
+          sed 's/.*\.\/\([^:]*\):.*/\1/' | \
+          sort -u
+        fi
+      register: volume_dirs_result
+      become_user: uctf
+      when: docker_compose_exists.stat.exists
+
+    - name: Create volume directories from docker-compose.yml
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/{{ item }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: '0755'
+      become_user: uctf
+      loop: "{{ volume_dirs_result.stdout_lines | default([]) }}"
+      when: docker_compose_exists.stat.exists and volume_dirs_result.stdout_lines | length > 0
+
+    - name: Check if docker compose is available
+      shell: docker compose version
+      become_user: uctf
+      register: docker_compose_check
+      failed_when: false
+
+    - name: Display docker compose version
+      debug:
+        var: docker_compose_check.stdout
+
+    - name: Deploy with docker compose V2
+      shell: |
+        cd "{{ target_directory }}/{{ service_name }}" && \
+        docker compose down && \
+        docker compose up -d --build
+      become_user: uctf
+      register: compose_result
+
+    - name: Display compose result
+      debug:
+        var: compose_result.stdout
+
+    - name: Check services status with docker compose
+      shell: |
+        cd "{{ target_directory }}/{{ service_name }}" && \
+        docker compose ps
+      become_user: uctf
+      register: services_status
+      failed_when: services_status.rc != 0
+
+    - name: Display services status
+      debug:
+        var: services_status.stdout
+
+    - name: Display deployment information
+      debug:
+        msg: 
+          - "Service deployed to: {{ target_directory }}/{{ service_name }}"
+          - "Using docker-compose.yml for deployment"
+          - "Service URL: http://{{ ansible_hostname }}.ctflab.local:5500"
+          - "PostgreSQL URL: postgresql://postgres:postgres@{{ ansible_hostname }}.ctflab.local:5433/smart_home_db"

@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="account-container">
+    <h1>User profile {{ user.username }}</h1>
+    
+    <div class="account-info">
+        <ul>
+            <li>
+                <strong>Username:</strong>
+                <span>{{ user.username }}</span>
+            </li>
+            <li>
+                <strong>ID:</strong>
+                <span>{{ user.id }}</span>
+            </li>
+            <li>
+                <strong>Role:</strong>
+                <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+            </li>
+            <li>
+                <strong>Password hash:</strong>
+                <span class="password-hash">{{ user.password_hash }}</span>
+            </li>
+            <li>
+                <strong>Cookie:</strong>
+                <span class="password-hash">{{ cookie }}</span>
+            </li>
+        </ul>
+    </div>
+       <div class="chat-section">
+        <h2>AI Assistant</h2>
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                {% if chat_history %}
+                    {% for message in chat_history %}
+                    <div class="message {{ 'user-message' if message.role == 'user' else 'assistant-message' }}">
+                        <div class="message-content">
+                            {{ message.content }}
+                        </div>
+                        <div class="message-time">
+                            {{ message.timestamp.strftime('%H:%M') if message.timestamp }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="message assistant-message">
+                        <div class="message-content">
+                            Hello! I'm your AI assistant. How can I help you today?
+                        </div>
+                        <div class="message-time">
+                            {{ now.strftime('%H:%M') }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="chat-input-container">
+                <input type="text" id="user-input" placeholder="Ask me anything..." class="chat-input">
+                <button onclick="sendMessage()" class="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+<style>
+.chat-section {
+    margin-top: 30px;
+    border-top: 2px solid #eee;
+    padding-top: 20px;
+}
+
+.chat-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.chat-messages {
+    height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e1e5e9;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.message {
+    display: flex;
+    max-width: 80%;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.user-message {
+    align-self: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.assistant-message {
+    align-self: flex-start;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.message-content {
+    padding: 12px 16px;
+    border-radius: 18px;
+    word-wrap: break-word;
+    line-height: 1.4;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.user-message .message-content {
+    background: #007bff;
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+.assistant-message .message-content {
+    background: #e9ecef;
+    color: #333;
+    border-bottom-left-radius: 5px;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 5px;
+    padding: 0 5px;
+}
+
+.chat-input-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid #e1e5e9;
+    border-radius: 25px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.chat-input:focus {
+    border-color: #007bff;
+}
+
+.send-btn {
+    padding: 14px 24px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.send-btn:hover {
+    background: #0056b3;
+}
+
+.send-btn:active {
+    transform: translateY(1px);
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Стили для скроллбара */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .chat-container {
+        margin: 0 10px;
+        padding: 15px;
+    }
+    
+    .chat-messages {
+        height: 350px;
+        padding: 15px;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
+    
+    .chat-input-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .chat-input {
+        width: 100%;
+    }
+    
+    .send-btn {
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+async function sendMessage() {
+    const input = document.getElementById('user-input');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // Добавляем сообщение пользователя
+    const userMessageDiv = document.createElement('div');
+    userMessageDiv.className = 'message user-message';
+    userMessageDiv.innerHTML = `
+        <div class="message-content">${message}</div>
+        <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+    `;
+    chatMessages.appendChild(userMessageDiv);
+    
+    // Очищаем input
+    input.value = '';
+    
+    // Прокручиваем вниз
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: message})
+        });
+        
+        const data = await response.json();
+        
+        // Добавляем ответ ассистента
+        const assistantMessageDiv = document.createElement('div');
+        assistantMessageDiv.className = 'message assistant-message';
+        assistantMessageDiv.innerHTML = `
+            <div class="message-content">${data.response}</div>
+            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        `;
+        chatMessages.appendChild(assistantMessageDiv);
+        
+        // Прокручиваем вниз
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+    } catch (error) {
+        console.error('Error sending message:', error);
+        
+        const errorMessageDiv = document.createElement('div');
+        errorMessageDiv.className = 'message assistant-message';
+        errorMessageDiv.innerHTML = `
+            <div class="message-content" style="background: #ffebee; color: #c62828;">
+                Sorry, there was an error processing your message. Please try again.
+            </div>
+            <div class="message-time">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+        `;
+        chatMessages.appendChild(errorMessageDiv);
+        
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
+
+// Отправка по Enter
+document.getElementById('user-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+// Автофокус на input
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('user-input').focus();
+});
+</script>
+    <div class="user-actions">
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+</div>
+{% endblock %}
+

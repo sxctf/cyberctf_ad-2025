@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>BioForge Corp — GenLang Portal</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <!-- Fonts -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <!-- Навбар -->
+        <nav class="nav">
+            <div
+                class="container row"
+                style="
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 0;
+                "
+            >
+                <div class="row" style="align-items: center; gap: 8px">
+                    <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 100 100"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="nav-logo"
+                    >
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r="48"
+                            fill="#0a0a0a"
+                            stroke="#e50914"
+                            stroke-width="4"
+                        />
+                        <path d="M50 2 L70 50 L50 98 L30 50 Z" fill="#e50914" />
+                        <path d="M2 50 L50 70 L98 50 L50 30 Z" fill="#ffffff" />
+                    </svg>
+                    <div class="brand">BioForge Corporation</div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Welcome Section -->
+        <main class="main">
+            <div
+                class="container"
+                style="margin-top: 100px; text-align: center"
+            >
+                <h1 class="section-title" style="font-size: 28px">
+                    GenLang Secure Portal
+                </h1>
+                <div class="video-container">
+                    <p
+                        class="helper"
+                        style="max-width: 600px; margin: 12px auto"
+                    >
+                        Welcome to the BioForge Corp Research Division. This
+                        portal provides controlled access to <b>GenLang</b> — a
+                        proprietary DSL for genomic programming. Unauthorized
+                        use is strictly prohibited.
+                    </p>
+
+                    <video
+                        width="640"
+                        height="360"
+                        controls
+                        style="
+                            border-radius: 30px;
+                            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                        "
+                    >
+                        <source src="video.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <!-- Кнопки и видео -->
+                <div
+                    style="
+                        margin-top: 40px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 20px;
+                    "
+                >
+                    <div
+                        style="
+                            display: flex;
+                            gap: 20px;
+                            justify-content: center;
+                            flex-wrap: wrap;
+                        "
+                    >
+                        <button
+                            class="btn btn-primary"
+                            onclick="location.href='playground.html'"
+                        >
+                            Enter Playground
+                        </button>
+                        <button
+                            class="btn btn-outline"
+                            onclick="location.href='docs.html'"
+                        >
+                            Documentation
+                        </button>
+                    </div>
+
+                    <!-- Видео -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Футер -->
+        <footer
+            class="container"
+            style="
+                margin: 60px auto;
+                text-align: center;
+                font-size: 13px;
+                color: var(--muted);
+            "
+        >
+            © BioForge Corp. BioForge Division. Confidential Internal Use Only.
+        </footer>
+    </body>
+</html>

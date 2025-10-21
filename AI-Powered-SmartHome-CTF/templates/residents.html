@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="spaceship-dashboard">
+    <h2>SpaceShip - Residents Management</h2>
+    
+    <div class="add-resident-form">
+        <h3>Add residents</h3>
+        <form method="POST" action="{{ url_for('add_resident') }}">
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="type">Type:</label>
+                <select name="type" required>
+                    <option value="civilian">Civilian</option>
+                    <option value="military">Military</option>
+                    <option value="repairman">Repairman</option>
+                    <option value="plant">Plant</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="room">Room:</label>
+                <select name="room" required>
+                    <option value="room1">Room 1</option>
+                    <option value="room2">Room 2</option>
+                    <option value="room3">Room 3</option>
+                    <option value="room4">Room 4</option>
+                    <option value="garden">Room 5</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="voucher">Voucher:</label>
+                <input type="text" name="voucher" required>
+            </div>
+            <button type="submit">Add</button>
+        </form>
+    </div>
+
+    <div class="rooms-container">
+        {% for room in ['room1', 'room2', 'room3', 'room4', 'garden'] %}
+        <div class="room" id="{{ room }}">
+            <div class="room-header">
+                <h3>{{ room | title }}</h3>
+            </div>
+            <div class="residents-list">
+                {% for resident in residents %}
+                    {% if resident.room == room %}
+                    <a href="{{ url_for('resident_details', resident_id=resident.resident_id) }}" class="resident-link">
+                        <div class="resident {{ resident.type }}">
+                            <span class="emoji">
+                                {% if resident.type == 'civilian' %}👨{% endif %}
+                                {% if resident.type == 'military' %}💂{% endif %}
+                                {% if resident.type == 'repairman' %}🔧{% endif %}
+                                {% if resident.type == 'plant' %}🌿{% endif %}
+                            </span>
+                            <span class="name">{{ resident.name | safe }}</span>
+                        </div>
+                    </a>
+                    {% endif %}
+                {% else %}
+                    <p class="empty-room">Empty Room</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.resident-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.resident-link:hover .resident {
+    background-color: #f0f0f0;
+}
+</style>
+{% endblock %}

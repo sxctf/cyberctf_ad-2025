@@ -1,0 +1,25 @@
+stages:
+  - deploy
+
+variables:
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+  ANSIBLE_SSH_PIPELINING: "True"
+  ANSIBLE_GATHERING: "smart"
+
+# Deploy to servers using Ansible
+deploy_to_servers:
+  stage: deploy
+  image: gitlab.ctflab.local:5035/sab/ansible-image:latest
+  tags:
+    - ansible
+  variables:
+    ANSIBLE_INVENTORY: "ansible_inventory"
+  before_script:
+    - ansible --version
+    - echo "Starting deployment to servers..."
+  script:
+    - ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml --extra-vars "uctf_password=$UCTF_PASSWORD" --extra-vars "git_repo_url=$CI_REPOSITORY_URL" --extra-vars "git_commit_sha=$CI_COMMIT_SHA" --extra-vars "gitlab_token=$TOKEN"
+  only:
+    - master
+    - develop
+  when: manual

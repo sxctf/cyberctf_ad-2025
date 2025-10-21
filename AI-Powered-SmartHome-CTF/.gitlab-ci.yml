@@ -1,0 +1,48 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  ANSIBLE_HOST_KEY_CHECKING: "False"
+  ANSIBLE_SSH_PIPELINING: "True"
+  ANSIBLE_GATHERING: "smart"
+
+# Build Docker image stage
+build_docker:
+  stage: build
+  image: docker:latest
+  tags:
+    - docker
+  services:
+    - docker:dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_DRIVER: overlay2
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker tag $CI_REGISTRY_IMAGE:latest $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  only:
+    - main
+    - develop
+
+# Deploy to servers using Ansible
+deploy_to_servers:
+  stage: deploy
+  image: gitlab.ctflab.local:5035/sab/ansible-image:latest
+  tags:
+    - ansible
+  variables:
+    ANSIBLE_INVENTORY: "ansible_inventory"
+  before_script:
+    - ansible --version
+    - echo "Starting deployment to servers..."
+  script:
+    - ansible-playbook -i $ANSIBLE_INVENTORY deploy.yml --extra-vars "uctf_password=$UCTF_PASSWORD" --extra-vars "git_repo_url=$CI_REPOSITORY_URL" --extra-vars "git_commit_sha=$CI_COMMIT_SHA" --extra-vars "gitlab_token=$TOKEN" --extra-vars "deployment_directory=$DEPLOYMENT_DIRECTORY"
+  only:
+    - main
+    - develop
+  when: manual

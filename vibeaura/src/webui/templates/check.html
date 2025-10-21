@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VibeAura</title>
+  <style>
+    :root {
+      --bg: #0b0d12;
+      --panel: #0f131a;
+      --panel-2: #121723;
+      --text: #e8ecf1;
+      --accent: #6ee7ff;
+      --accent-2: #8b5cf6;
+      --accent-3: #22c55e;
+      --border: #202636;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    .top-button {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: var(--accent);
+      color: var(--bg);
+      padding: 8px 14px;
+      border-radius: var(--radius);
+      font-weight: bold;
+      text-decoration: none;
+      box-shadow: var(--shadow);
+      transition: background 0.2s ease;
+    }
+    .top-button:hover {
+      background: var(--accent-2);
+    }
+    .container {
+      background: var(--panel);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 600px;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .task-form input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      background: var(--panel-2);
+      color: var(--text);
+      font: 14px var(--sans);
+      outline: none;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
+    .task-form button {
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px;
+      background: var(--accent);
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+    .task-form button:hover {
+      background: var(--accent-2);
+    }
+    .card {
+      background: var(--panel-2);
+      padding: 12px;
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-all;
+    }
+    .card h3 {
+      margin: 0;
+      color: var(--accent);
+      word-break: break-all;
+    }
+    .card p {
+      margin: 0;
+      word-break: break-word;
+    }
+    .card pre {
+      background: #1e1e2f;
+      padding: 8px;
+      border-radius: 8px;
+      color: #e3e3e3;
+      font-family: monospace;
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-all;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .error {
+      color: #ef4444;
+      font-weight: bold;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <a href="/" class="top-button">vibeaura</a>
+
+  <div class="container">
+    <form class="task-form" id="taskForm">
+      <input type="text" id="taskId" placeholder="Enter Task ID" required />
+      <button type="submit">Check Task</button>
+    </form>
+    <div id="error" class="error"></div>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('taskForm');
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('error');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultsDiv.innerHTML = '';
+      errorDiv.textContent = '';
+
+      const taskId = document.getElementById('taskId').value.trim();
+      if (!taskId) return;
+
+      try {
+        const response = await fetch(`/webui/v1/getData/${encodeURIComponent(taskId)}`);
+        if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+        const data = await response.json();
+        if (!data || data.length === 0) {
+          errorDiv.textContent = 'Data not found';
+          return;
+        }
+
+        data.forEach(item => {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const title = document.createElement('h3');
+          title.textContent = `${item.name} (${item.taskID})`;
+          card.appendChild(title);
+
+          const desc = document.createElement('p');
+          desc.textContent = `Description: ${item.task_description}`;
+          card.appendChild(desc);
+
+          const stdout = document.createElement('pre');
+          stdout.textContent = `stdout:\n${item.stdout || ''}`;
+          card.appendChild(stdout);
+
+          const stderr = document.createElement('pre');
+          stderr.textContent = `stderr:\n${item.stderr || ''}`;
+          card.appendChild(stderr);
+
+          resultsDiv.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = 'Error while fetching task data';
+      }
+    });
+  </script>
+</body>
+</html>

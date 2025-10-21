@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>BioForge Docs — GenLang Manual</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <!-- Fonts -->
+        <link
+            href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Inter:wght@400;500;600&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <nav class="nav">
+            <div
+                class="container row"
+                style="
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 0;
+                "
+            >
+                <div class="row" style="align-items: center; gap: 8px">
+                    <svg
+                        width="28"
+                        height="28"
+                        viewBox="0 0 100 100"
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="nav-logo"
+                    >
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r="48"
+                            fill="#0a0a0a"
+                            stroke="#e50914"
+                            stroke-width="4"
+                        />
+                        <path d="M50 2 L70 50 L50 98 L30 50 Z" fill="#e50914" />
+                        <path d="M2 50 L50 70 L98 50 L50 30 Z" fill="#ffffff" />
+                    </svg>
+                    <div class="brand">BioForge Corporation</div>
+                </div>
+                <a href="index.html" class="btn btn-outline"
+                    >Back to Playground</a
+                >
+            </div>
+        </nav>
+
+        <main class="main">
+            <div class="container" style="margin-top: 40px">
+                <div class="card">
+                    <h1 class="section-title">📘 BioForge Internal Document</h1>
+                    <p class="helper">GenLang v0.1 — Developer Manual</p>
+                    <p class="helper err">
+                        Confidential: использование GenLang вне лабораторий
+                        BioForge строго запрещено.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">🧬 Overview</h2>
+                    <p>
+                        GenLang — проприетарный DSL корпорации BioForge для
+                        описания поведения биологических последовательностей.
+                        Исходный код компилируется в цепочки нуклеотидов (<code
+                            >A, C, G, T</code
+                        >) и исполняется виртуальной геномной машиной (GVM).
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">📋 Основные конструкции языка</h2>
+                    <h3>Объявление переменной</h3>
+                    <pre class="textarea">
+var seq = "ACGTACGT";
+var counter = 0;
+</pre
+                    >
+
+                    <h3>Присваивание</h3>
+                    <pre class="textarea">
+counter = counter + 1;
+</pre
+                    >
+
+                    <h3>Условные конструкции</h3>
+                    <pre class="textarea">
+if (counter &lt; 10) {
+    express("still low");
+} else {
+    express("limit reached");
+}
+</pre
+                    >
+                    <p class="helper">
+                        Поддерживаемые операторы:
+                        <code>&lt;, &gt;, &lt;=, &gt;=, ==, !=</code>, логика
+                        <code>&amp;&amp;, ||, !</code>.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">🔄 Циклы</h2>
+                    <pre class="textarea">
+var i = 0;
+while (i &lt; 3) {
+    express(i);
+    i = i + 1;
+}
+
+for (j in 1..3) {
+    express("FOR iteration");
+    express(j);
+}
+</pre
+                    >
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">🧪 BioForge-инструкции</h2>
+                    <p>
+                        <code>mutate(id)</code> — Вносит случайную мутацию в
+                        значение переменной.
+                    </p>
+                    <pre class="textarea">mutate(seq);</pre>
+
+                    <p>
+                        <code>replicate(id)</code> — Дублирует
+                        последовательность.
+                    </p>
+                    <pre class="textarea">replicate(seq);</pre>
+
+                    <p>
+                        <code>evolve(id)</code> — Генерирует «эволюционный шаг».
+                    </p>
+                    <pre class="textarea">evolve(seq);</pre>
+
+                    <p>
+                        <code>express(expr)</code> — Выводит выражение
+                        («экспрессия гена»).
+                    </p>
+                    <pre class="textarea">
+express("ok");
+express(seq);
+</pre
+                    >
+
+                    <p>
+                        <code>infect()</code> — Экспериментальная функция. Может
+                        вызвать «утечку».
+                    </p>
+                    <pre class="textarea">infect();</pre>
+
+                    <p>
+                        <code>setenv("KEY","VALUE")</code> — Устанавливает
+                        переменные окружения.
+                    </p>
+                    <pre class="textarea">
+setenv("QDRANT_COLLECTION", "docs-kb");
+setenv("QDRANT_VECTOR", "3.11");
+</pre
+                    >
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">🔧 Expressions</h2>
+                    <ul>
+                        <li>Числа: <code>42, 3.14, -7</code></li>
+                        <li>Строки: <code>"ACGT", "hello"</code></li>
+                        <li>Арифметика: <code>+, -, *, /, %, ^</code></li>
+                        <li>Сравнения: <code>&lt;, &gt;, ==, !=</code></li>
+                        <li>Логика: <code>&amp;&amp;, ||, !</code></li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2 class="section-title">📝 Пример кода (SMOKE TEST)</h2>
+                    <pre class="textarea">
+var seq = "ACGTACGTACGT";
+
+express("=== TEST START ===");
+express(seq);
+
+mutate(seq);
+replicate(seq);
+evolve(seq);
+
+var counter = 0;
+while (counter &lt; 3) {
+    express("loop iteration");
+    counter = counter + 1;
+}
+
+for (i in 1..3) {
+    express("FOR iteration");
+    express(i);
+}
+
+if (seq != "GGGG") {
+    express("sequence survived");
+}
+
+setenv("QDRANT_COLLECTION", "bioforge-kb");
+setenv("QDRANT_VECTOR", "13.37,42.0");
+infect("demo");
+
+express("=== TEST END ===");
+</pre
+                    >
+                </div>
+            </div>
+        </main>
+
+        <footer
+            class="container"
+            style="
+                margin: 40px auto;
+                text-align: center;
+                font-size: 13px;
+                color: var(--muted);
+            "
+        >
+            © BioForge Corp. R&D Division. All Rights Reserved.
+        </footer>
+    </body>
+</html>

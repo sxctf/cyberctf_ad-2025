@@ -1,0 +1,65 @@
+services:
+  web-ui:
+    build:
+       context: ./src/webui
+       dockerfile: Dockerfile
+    container_name: vibeaura-web-ui
+    hostname: web-ui
+    volumes:
+    - ./src/webui:/app
+    - ./src/webui/log:/app/log
+    command: python3 app.py
+    environment:
+    - PYTHONUNBUFFERED=1 
+    ports:
+      - 9000:8080
+    restart: always
+    depends_on:
+      - integration-deployer-service
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges
+    networks:
+      - external
+      - internal-1
+
+  integration-deployer-service:
+    build:
+       context: ./src/integration-deployer
+       dockerfile: Dockerfile
+    container_name: vibeaura-integration-deployer-service
+    hostname: ids
+    volumes:
+    - ./src/integration-deployer/log:/app/log
+    - ./src/integration-deployer:/app
+    privileged: true # Do not Delete it. Business-Logic will be broken. You lost your poiunts.
+    environment:
+    - PYTHONUNBUFFERED=1 
+    expose:
+      - 8992
+    ports:
+      - "8000-8100:8000-8100"
+    restart: always 
+    networks:
+      - internal-1
+
+networks:
+  external:
+    # name: external
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+  
+  internal-1: 
+    # name: web-ui and integration
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.20.1.0/24
+

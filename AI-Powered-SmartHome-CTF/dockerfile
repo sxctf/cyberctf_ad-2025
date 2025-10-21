@@ -1,0 +1,17 @@
+FROM python:3.9.6-slim
+
+ENV POSTGRES_HOST=my_postgres
+ENV POSTGRES_PORT=5433
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN python3 -m pip install --upgrade pip && \
+    python3 -m pip install -r requirements.txt 
+
+COPY . .
+
+EXPOSE 5500
+
+CMD ["python", "app.py"]

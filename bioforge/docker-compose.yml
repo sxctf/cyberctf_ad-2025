@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  bioforge:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bioforge
+    restart: unless-stopped
+    environment:
+      GIN_MODE: release
+      QDRANT_HOST: qdrant
+    depends_on:
+      - qdrant
+    ports:
+      - "8443:8080"
+    networks:
+      - bioforge-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant
+    restart: unless-stopped
+    ports:
+      - "6334:6334"
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - bioforge-net
+
+  init-qdrant:
+    image: curlimages/curl:8.7.1
+    container_name: init-qdrant
+    depends_on:
+      - qdrant
+    restart: "no"
+    entrypoint:
+      - sh
+      - -c
+      - |
+        echo "Waiting for Qdrant..."
+        sleep 5
+
+        echo "Creating collection bioforge-kb..."
+        curl -sf -X PUT http://qdrant:6333/collections/bioforge-kb \
+          -H "Content-Type: application/json" \
+          -d '{"vectors": {"size": 1024, "distance": "Cosine"}}' \
+          && echo "✅ Collection created (or already exists)" \
+          || echo "⚠️  Collection already exists or failed to create"
+    networks:
+      - bioforge-net
+
+networks:
+  bioforge-net:
+
+volumes:
+  qdrant_data:

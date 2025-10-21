@@ -1,0 +1,28 @@
+[all:vars]
+ansible_user=uctf
+ansible_ssh_pass={{ uctf_password }}
+ansible_become_pass={{ uctf_password }}
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+ansible_python_interpreter=/usr/bin/python3
+
+[uctf_team_vms]
+team-1 ansible_host=10.62.1.10 hostname=team-1.ctflab.local
+team-2 ansible_host=10.62.2.10 hostname=team-2.ctflab.local
+team-3 ansible_host=10.62.3.10 hostname=team-3.ctflab.local
+team-4 ansible_host=10.62.4.10 hostname=team-4.ctflab.local
+team-5 ansible_host=10.62.5.10 hostname=team-5.ctflab.local
+team-6 ansible_host=10.62.6.10 hostname=team-6.ctflab.local
+team-7 ansible_host=10.62.7.10 hostname=team-7.ctflab.local
+team-8 ansible_host=10.62.8.10 hostname=team-8.ctflab.local
+team-9 ansible_host=10.62.9.10 hostname=team-9.ctflab.local
+team-10 ansible_host=10.62.10.10 hostname=team-10.ctflab.local
+team-11 ansible_host=10.62.11.10 hostname=team-11.ctflab.local
+team-12 ansible_host=10.62.12.10 hostname=team-12.ctflab.local
+team-13 ansible_host=10.62.13.10 hostname=team-13.ctflab.local
+team-14 ansible_host=10.62.14.10 hostname=team-14.ctflab.local
+team-15 ansible_host=10.62.15.10 hostname=team-15.ctflab.local
+team-16 ansible_host=10.62.16.10 hostname=team-16.ctflab.local
+team-17 ansible_host=10.62.17.10 hostname=team-17.ctflab.local
+
+[team_servers:children]
+uctf_team_vms

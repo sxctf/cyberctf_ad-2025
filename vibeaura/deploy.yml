@@ -1,0 +1,227 @@
+---
+- name: Deploy CTF Service
+  hosts: team_servers
+  become: yes
+  become_user: uctf
+  gather_facts: yes
+  
+  vars:
+    # Default values - can be overridden by extra-vars
+    target_directory: /home/uctf/services
+    # Extract project name from repository URL
+    project_name: "{{ git_repo_url | basename | regex_replace('\\.git$', '') }}"
+    service_name: "{{ ansible_hostname | regex_replace('^team-', '') }}-{{ project_name | lower }}"
+    service_port: 5500
+
+  tasks:
+    - name: Display deployment configuration
+      debug:
+        msg:
+          - "Target directory: {{ target_directory }}"
+          - "Project name: {{ project_name }}"
+          - "Service name: {{ service_name }}"
+          - "Repository: {{ git_repo_url }}"
+          - "Commit SHA: {{ git_commit_sha }}"
+          - "Target host: {{ ansible_hostname }}"
+
+    - name: Create services directory if it doesn't exist
+      file:
+        path: "{{ target_directory }}"
+        state: directory
+        owner: uctf
+        group: uctf
+        mode: '0755'
+      become_user: uctf
+
+    - name: Check if repository directory exists
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}"
+      register: repo_dir_stat
+
+    - name: Remove existing repository directory if it exists
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        state: absent
+      when: repo_dir_stat.stat.exists
+      become_user: root
+
+    - name: Clone repository
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ target_directory }}/{{ service_name }}"
+        version: "{{ git_commit_sha | default('HEAD') }}"
+        clone: yes
+        update: no
+        force: yes
+      become_user: uctf
+      environment:
+        GIT_SSL_NO_VERIFY: "1"
+        GIT_USERNAME: "{{ git_username | default('gitlab-ci-token') }}"
+        GIT_PASSWORD: "{{ git_password | default(gitlab_token) }}"
+      retries: 3
+      delay: 5
+      register: clone_result
+      until: clone_result is succeeded
+
+    - name: Remove .git directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}/.git"
+        state: absent
+      become_user: uctf
+
+    - name: Set proper ownership for service directory
+      file:
+        path: "{{ target_directory }}/{{ service_name }}"
+        owner: uctf
+        group: uctf
+        recurse: yes
+      become: yes
+
+    - name: Install pip3
+      package:
+        name: python3-pip
+        state: present
+      become: yes
+      become_user: root
+
+    - name: Upgrade pip
+      pip:
+        name: pip
+        state: latest
+      become: yes
+      become_user: root
+
+    - name: Install Python Docker SDK
+      pip:
+        name: docker
+        state: present
+      become: yes
+      become_user: root
+
+    - name: Install docker-compose Python library
+      pip:
+        name: docker-compose
+        state: present
+      become: yes
+      become_user: root
+
+    - name: Check if Dockerfile exists for direct container deployment
+      stat:
+        path: "{{ target_directory }}/{{ service_name }}/src/webui/Dockerfile"
+      register: dockerfile_exists
+
+    - name: Ensure Docker service is running
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+      when: dockerfile_exists.stat.exists
+
+    - name: Stop existing containers if running
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      become_user: uctf
+      ignore_errors: yes
+      retries: 2
+      delay: 3
+      when: dockerfile_exists.stat.exists
+      loop:
+        - web-ui
+        - integration-deployer-service
+
+    - name: Build web-ui Docker image
+      docker_image:
+        name: "{{ service_name }}-webui"
+        source: build
+        build:
+          path: "{{ target_directory }}/{{ service_name }}/src/webui"
+          dockerfile: Dockerfile
+        state: present
+      become_user: uctf
+      when: dockerfile_exists.stat.exists
+
+    - name: Build integration-deployer Docker image
+      docker_image:
+        name: "{{ service_name }}-integration"
+        source: build
+        build:
+          path: "{{ target_directory }}/{{ service_name }}/src/integration-deployer"
+          dockerfile: Dockerfile
+        state: present
+      become_user: uctf
+      when: dockerfile_exists.stat.exists
+
+    - name: Create Docker networks
+      docker_network:
+        name: "{{ item.name }}"
+        driver: bridge
+        ipam_config:
+          - subnet: "{{ item.subnet }}"
+      become_user: uctf
+      when: dockerfile_exists.stat.exists
+      loop:
+        - { name: "{{ service_name }}-external", subnet: "192.168.1.0/24" }
+        - { name: "{{ service_name }}-internal", subnet: "10.20.1.0/24" }
+
+    - name: Run integration-deployer-service container
+      docker_container:
+        name: "integration-deployer-service"
+        image: "{{ service_name }}-integration"
+        state: started
+        restart_policy: always
+        ports:
+          - "8000-8100:8000-8100"
+        volumes:
+          - "{{ target_directory }}/{{ service_name }}/src/integration-deployer:/app"
+          - "{{ target_directory }}/{{ service_name }}/src/integration-deployer/log:/app/log"
+        env:
+          PYTHONUNBUFFERED: "1"
+        privileged: yes
+        networks:
+          - name: "{{ service_name }}-internal"
+        detach: yes
+      become_user: uctf
+      when: dockerfile_exists.stat.exists
+
+    - name: Run web-ui container
+      docker_container:
+        name: "web-ui"
+        image: "{{ service_name }}-webui"
+        state: started
+        restart_policy: always
+        ports:
+          - "9000:8080"
+        volumes:
+          - "{{ target_directory }}/{{ service_name }}/src/webui:/app"
+          - "{{ target_directory }}/{{ service_name }}/src/webui/log:/app/log"
+        env:
+          PYTHONUNBUFFERED: "1"
+        command: "python3 app.py"
+        user: "1000:1000"
+        cap_drop:
+          - ALL
+        read_only: yes
+        tmpfs:
+          - /tmp
+        security_opts:
+          - no-new-privileges
+        networks:
+          - name: "{{ service_name }}-external"
+          - name: "{{ service_name }}-internal"
+        detach: yes
+      become_user: uctf
+      when: dockerfile_exists.stat.exists
+
+    - name: Display deployment information
+      debug:
+        msg: 
+          - "Service deployed to: {{ target_directory }}/{{ service_name }}"
+          - "Repository: {{ git_repo_url }}"
+          - "Commit SHA: {{ git_commit_sha | default('HEAD') }}"
+          - "Target host: {{ ansible_hostname }}"
+          - "Containers: web-ui, integration-deployer-service"
+          - "Web UI URL: http://{{ ansible_hostname }}.ctflab.local:9000"
+          - "Integration service ports: 8000-8100"
+          - "Deployment method: {{ 'direct container' if dockerfile_exists.stat.exists else 'source code only' }}"

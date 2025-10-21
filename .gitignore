@@ -1,10 +1,3 @@
-# Игнорируем содержимое поддиректорий (они являются отдельными git-репозиториями)
-AI-Powered-SmartHome-CTF/
-bioforge/
-ctf-final-autumn-2025-startpage/
-sleepcapsule/
-vibeaura/
-
 # Логи
 *.log
 

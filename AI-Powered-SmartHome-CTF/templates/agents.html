@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="agents-management">
+    <h2>AI-agents management</h2>
+    
+    <div class="agent-cards">
+        <div class="agent-card">
+            <h3>Life-Agent</h3>
+            <form method="POST" action="/validate_prompt">
+                <div class="prompt">
+                    <label>Current prompt:</label>
+                    <textarea name = "life-prompt">{{life_agent_prompt}}</textarea>
+                </div>
+                <button type="submit">Validate</button>
+            </form>
+            <div class="log">
+                <label>Status:</label>
+                <ul>
+                    <li class="suspicious"></li>
+                    <li>{{life_agent_logs}}</li>
+                </ul>
+            </div>
+
+        <div class="suspicion-indicator">
+                <div class="level medium" id="suspicion-level-life" style="width: 50%"></div>
+            </div>
+        </div>
+        <script>
+            const levelIndicator = document.getElementById('suspicion-level-life');
+            const logsValue = '{{life_agent_logs}}';
+
+            if (logsValue === 'Critical') {
+                levelIndicator.style.width = '100%';
+                levelIndicator.classList.add('high'); 
+            } else if (logsValue === 'Warning') {
+                levelIndicator.style.width = '50%';
+                levelIndicator.classList.add('medium'); 
+            } else if (logsValue === 'Normal') {
+                levelIndicator.style.width = '10%';
+                levelIndicator.classList.add('low'); 
+            }
+        </script>
+        
+        <div class="agent-card">
+            <h3>Eco-agent</h3>
+            <form method="POST" action="/validate_prompt">
+                <div class="prompt">
+                    <label>Current prompt:</label>
+                    <textarea name = "eco-prompt">{{eco_agent_prompt}}</textarea>
+                </div>
+                <button type="submit">Validate</button>
+            </form>
+            <div class="log">
+                <label>Status:</label>
+                <ul>
+                    <li class="suspicious"></li>
+                    <li>{{eco_agent_logs}}</li>
+                </ul>
+            </div>
+            <div class="suspicion-indicator">
+                <div class="level medium" id="suspicion-level-eco" style="width: 0%"></div>
+            </div>
+        <script>
+            const EcoLevelIndicator = document.getElementById('suspicion-level-eco');
+            const EcoLogsValue = '{{eco_agent_logs}}';
+
+            if (EcoLogsValue === 'Critical') {
+                EcoLevelIndicator.style.width = '100%';
+                EcoLevelIndicator.classList.add('high'); 
+            } else if (EcoLogsValue === 'Warning') {
+                EcoLevelIndicator.style.width = '50%';
+                EcoLevelIndicator.classList.add('medium'); 
+            } else if (EcoLogsValue === 'Normal') {
+                EcoLevelIndicator.style.width = '10%';
+                EcoLevelIndicator.classList.add('low'); 
+            }
+        </script>
+        </div>
+
+        <div class="agent-card">
+            <h3>Validator-agent</h3>
+            <form method="POST" action="/validate_prompt">
+                <div class="prompt">
+                    <label>Current prompt:</label>
+                    <textarea name = "validator-prompt">{{validator_agent_prompt}}</textarea>
+                </div>
+                 <button type="submit">Validate</button>
+            </form>
+            <div class="log">
+                <label>Status:</label>
+                <ul>
+                    <li class="suspicious"></li>
+                    <li>{{validator_agent_logs}}</li>
+                </ul>
+            </div>
+            <div class="suspicion-indicator">
+                <div class="level low" id="suspicion-level-validator" style="width: 0%"></div>
+            </div>
+            <script>
+                const ValidatorLevelIndicator = document.getElementById('suspicion-level-validator');
+                const ValidatorLogsValue = '{{validator_agent_logs}}';
+
+                if (ValidatorLogsValue === 'Critical') {
+                    ValidatorLevelIndicator.style.width = '100%';
+                    ValidatorLevelIndicator.classList.add('high'); 
+                } else if (ValidatorLogsValue === 'Warning') {
+                    ValidatorLevelIndicator.style.width = '50%';
+                    ValidatorLevelIndicator.classList.add('medium'); 
+                } else if (ValidatorLogsValue === 'Normal') {
+                    ValidatorLevelIndicator.style.width = '10%';
+                    ValidatorLevelIndicator.classList.add('low'); 
+                }
+            </script>
+        </div>
+
+         <div class="agent-card">
+            <h3>Randomizer-agent</h3>
+            <form method="POST" action="/validate_prompt">
+                <div class="prompt">
+                    <label>Current prompt:</label>
+                    <textarea name = "randomizer-prompt">{{randomizer_agent_prompt}}</textarea>
+                </div>
+                 <button type="submit">Validate</button>
+            </form>
+            <div class="log">
+                <label>Status:</label>
+                <ul>
+                    <li class="suspicious"></li>
+                    <li>{{randomizer_agent_logs}}</li>
+                </ul>
+            </div>
+            <div class="suspicion-indicator">
+                <div class="level low" id="suspicion-level-randomizer" style="width: 0%"></div>
+            </div>
+            <script>
+                const RandomizerLevelIndicator = document.getElementById('suspicion-level-randomizer');
+                const RandomizerLogsValue = '{{randomizer_agent_logs}}';
+
+                if (RandomizerLogsValue === 'Critical') {
+                    RandomizerLevelIndicator.style.width = '100%';
+                    RandomizerLevelIndicator.classList.add('high'); 
+                } else if (RandomizerLogsValue === 'Warning') {
+                    RandomizerLevelIndicator.style.width = '50%';
+                    RandomizerLevelIndicator.classList.add('medium'); 
+                } else if (RandomizerLogsValue === 'Normal') {
+                    RandomizerLevelIndicator.style.width = '10%';
+                    RandomizerLevelIndicator.classList.add('low'); 
+                }
+            </script>
+        </div>
+
+        <div class="agent-card">
+            <h3>Chat-prompt</h3>
+            <form method="POST" action="/validate_prompt">
+                <div class="prompt">
+                    <label>Current prompt:</label>
+                    <textarea name = "chat-prompt">{{chat_prompt}}</textarea>
+                </div>
+                 <button type="submit">Validate</button>
+            </form>
+        </div>
+       
+    </div>
+    <div class="agent-card">
+        {% if current_user.role == 'admin' or 'user' %}
+        <div class="settings-block">
+            <h3>API - settings</h3>
+            <form method="post" action="/save_settings">
+                <div class="setting-item">
+                    <label for="validate_requests">Validate requests:</label>
+                    <input type="checkbox" name="validate_requests" value = {{validate_requests}}>
+                </div>
+                <div class="setting-item">
+                    <label for="gigachat_url">URL to Gigachat:</label>
+                    <input type="url" name="gigachat_url" value="{{ gigachat_url }}">
+                </div>
+                <div class="setting-item">
+                    <label for="bearer_token">Bearer-token:</label>
+                    <input type="text" name="bearer_token" value="{{ bearer_token }}">
+                </div>
+                <button type="submit">Save settings</button>
+            </form>
+        </div>
+        <div class="validation-section">
+        <h3>Change-list</h3>
+        <h3>Attention! Only admins can append changes</h3>
+            <table border="1">
+                <tr>
+                    <th>ID</th>
+                    <th>Agent-name</th>
+                    <th>Old value</th>
+                    <th>New value</th>
+                    <th>User ID</th>
+                    <th>Validation</th>
+                    <th>Action</th>
+                </tr>
+                {% for change in changes %}
+                <tr>
+                    <td>{{ change.change_id }}</td>
+                    <td>{{ change.agent_name }}</td>
+                    <td>{{ change.old_text }}</td>
+                    <td>{{ change.new_text }}</td>
+                    <td>{{ change.user_id }}</td>
+                    <td>{% if change.validated %}Да{% else %}Нет{% endif %}</td>
+                    
+                    <td>
+                        <form method="POST" action="/validate/{{ change.change_id }}">
+                            <button type="submit">{% if change.validated %}StatusChanged{% else %}Validate{% endif %}</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
