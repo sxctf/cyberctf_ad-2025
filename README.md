@@ -7,23 +7,21 @@
 ### AI-Powered-SmartHome-CTF
 Таск с AI-управляемым умным домом.
 
-**Ветка:** main  
-**Репозиторий:** https://gitlab.ctflab.local/p1zza/AI-Powered-SmartHome-CTF.git
-
 ### bioforge
 Биотехнологический таск.
-
-**Ветка:** main  
-**Репозиторий:** https://gitlab.ctflab.local/Gilfoyle/bioforge.git
 
 ### sleepcapsule
 Таск Sleep Capsule.
 
-**Ветка:** main  
-**Репозиторий:** https://gitlab.ctflab.local/andreika47/sleepcapsule.git
-
 ### vibeaura
 Таск VibeAura.
 
-**Ветка:** master  
-**Репозиторий:** https://gitlab.ctflab.local/Olejka/vibeaura.git
+## Использование
+
+Клонирование репозитория:
+```bash
+git clone https://github.com/sxctf/cyberctf_ad-2025.git
+cd cyberctf_ad-2025
+```
+
+Все таски находятся в отдельных директориях как обычные файлы.
