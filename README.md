@@ -16,12 +16,6 @@
 **Ветка:** main  
 **Репозиторий:** https://gitlab.ctflab.local/Gilfoyle/bioforge.git
 
-### ctf-final-autumn-2025-startpage
-Стартовая страница финала CTF.
-
-**Ветка:** master  
-**Репозиторий:** https://gitlab.ctflab.local/Alex_Rod/ctf-final-autumn-2025-startpage.git
-
 ### sleepcapsule
 Таск Sleep Capsule.
 
